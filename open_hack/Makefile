@@ -12,7 +12,7 @@ obj-y		:= ../udis86/libudis86/
 
 
 $(NAME)-y := main.o  sct_hook.o  utils.o \
-             udis_utils.o
+             udis_utils.o restricted.o
 $(NAME)-y += ../udis86/libudis86/built-in.o
 
 
