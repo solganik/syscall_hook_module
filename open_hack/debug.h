@@ -5,11 +5,11 @@
 #	ifdef __KERNEL__
 
 #		define _TRACE_DEBUG( format, args... ) do {\
-			pr_debug( "STRATO: DEBUG : " format " (" __stringify(__FILE__) ":%s:" __stringify(__LINE__) ")\n", ##args,__func__ ); \
+			pr_debug( "DEBUG : " format " (" __stringify(__FILE__) ":%s:" __stringify(__LINE__) ")\n", ##args,__func__ ); \
 		}while(0);
 
 #		define _TRACE( level, levelName, format, args... ) do { \
-			printk( level "STRATO: " levelName ": " format " (" __stringify(__FILE__) ":%s:" __stringify(__LINE__) ")\n", ##args, __func__ ); \
+			printk( level " : " levelName ": " format " (" __stringify(__FILE__) ":%s:" __stringify(__LINE__) ")\n", ##args, __func__ ); \
 		} while( 0 )
 
 
