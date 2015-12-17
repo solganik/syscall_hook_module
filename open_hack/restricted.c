@@ -71,6 +71,10 @@ static inline unsigned long hash_str(const char *name, int bits)
 	return hash >> (BITS_PER_LONG - bits);
 }
 
+static size_t _get_size_for_entry_alloc_bytes(int file_path_len)
+{
+	return sizeof(struct restricted_file_entry) + file_path_len + 1;
+}
 
 
 /* Don't inline this: 'struct kstat' is biggish */
