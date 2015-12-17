@@ -106,7 +106,7 @@ failed_open_file:
 	return ret;
 }
 
-bool is_restricted(const char *file_path, void *ctx)
+bool is_restricted(void *ctx, const char *file_path)
 {
 	return false;
 }
