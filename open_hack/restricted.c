@@ -10,9 +10,16 @@
 #include <linux/slab.h>
 
 
+#define RESTRICTED_HASH_BITS 6
 struct restricted_files {
-
+		DECLARE_HASHTABLE(hash, RESTRICTED_HASH_BITS);
 };
+
+struct restricted_file_entry {
+	struct hlist_node hash;
+	u8	buffer[0];
+} __packed;
+
 
 void *restricted_allocate(void)
 {
@@ -20,14 +27,29 @@ void *restricted_allocate(void)
 	if (!result){
 		return result;
 	}
-	TRACE_DEBUG("Allocated at %p",result);
+	TRACE_DEBUG("Allocated at %p..initilizing",result);
+	hash_init(result->hash);
+
 	/* structure init goes here*/
 	return result;
 }
 
 void restricted_destroy(void *ctx)
 {
-	TRACE_DEBUG("Destroying at %p", ctx);
+	int loop_cursor;
+	struct restricted_file_entry *entry;
+	struct hlist_node *tmp;
+	struct restricted_files *restricted_ctx = (struct restricted_files *)ctx;
+
+	TRACE_DEBUG("Destroying hash at %p", ctx);
+
+	hash_for_each_safe(restricted_ctx->hash, loop_cursor, tmp, entry, hash) {
+		TRACE_DEBUG("Remove entry %p - %s", entry, entry->buffer);
+		hash_del(&entry->hash);
+		kfree(entry);
+	}
+
+	TRACE_DEBUG("Freeing hash at %p", ctx);
 	kfree(ctx);
 }
 
