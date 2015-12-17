@@ -94,12 +94,6 @@ int restricted_init(const char *mafifest_path, void *ctx)
 	}
 
 	TRACE_DEBUG("Done reading file");
-	/*file_size = _manifest_file_size_bytes(file);
-	if (file_size <= 0) {
-		TRACE_ERROR("File size is wrong file - %s size %lu", mafifest_path, file_size);
-		goto close_file;
-	}*/
-
 close_file:
 	filp_close(file, NULL);
 failed_open_file:
