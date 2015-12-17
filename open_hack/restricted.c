@@ -194,6 +194,18 @@ failed_open_file:
 
 bool is_restricted(void *ctx, const char *file_path)
 {
+	struct restricted_file_entry *entry;
+	struct restricted_files *restricted_ctx = (struct restricted_files *)ctx;
+	unsigned long hash_key = hash_str(file_path,RESTRICTED_HASH_BITS);
+
+	TRACE_DEBUG("Check if %s restricted", file_path);
+	hash_for_each_possible(restricted_ctx->hash, entry, hash, hash_key) {
+		TRACE_DEBUG("Compare %s to %s ", file_path, entry->buffer);
+		if (strcmp(file_path,entry->buffer) == 0){
+			return true;
+		}
+	}
+
 	return false;
 }
 
