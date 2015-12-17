@@ -80,20 +80,60 @@ static size_t _get_size_for_entry_alloc_bytes(int file_path_len)
 /* Don't inline this: 'struct kstat' is biggish */
 static noinline_for_stack long _manifest_file_size_bytes(struct file *file)
 {
-	struct kstat st;
-	if (vfs_getattr(&file->f_path, &st))
-		return -1;
-	if (!S_ISREG(st.mode))
-		return -1;
-	if (st.size != (long)st.size)
-		return -1;
-	return st.size;
+	unsigned long hash_key;
+	int alloc_len = _get_size_for_entry_alloc_bytes(len);
+	struct restricted_file_entry *entry;
+
+	TRACE_DEBUG("Allocating %lu	 -  %d bytes", sizeof(struct restricted_file_entry), alloc_len);
+	entry = (struct restricted_file_entry *)kmalloc(alloc_len, GFP_KERNEL);
+
+	hash_key = hash_str(file_path,RESTRICTED_HASH_BITS);
+
+	TRACE_DEBUG("Adding '%s' len %d hash %lx", file_path, len, hash_key)
+	if (!entry){
+		TRACE_ERROR("Failed to allocate entry for path %s len %d", file_path, len);
+		return -ENOMEM;
+	}
+	TRACE_DEBUG("Adding to hash Filepath is '%s' hash %lx len %d", file_path, hash_key, len);
+	INIT_HLIST_NODE(&entry->hash);
+	memcpy(entry->buffer, file_path, len);
+	entry->buffer[len] = '\0';
+
+	hash_add(ctx->hash, &entry->hash, hash_key);
+	return 0;
 }
 
+static int parse_fill_context_section(char *buffer, int size,  struct restricted_files *ctx)
+{
+	char *file_name_end;
+	char *buffer_start = buffer;
+	int parsed_files = 0;
+	int consumed;
+	int file_path_len = 0;
+
+
+	while (true) {
+		file_name_end = strpbrk(buffer, "\n");
+
+		if (!file_name_end) {
+			consumed =  buffer - buffer_start;
+			TRACE_DEBUG("Done processing, total=%d filenames, consumed %d bytes", parsed_files, consumed);
+			break;
+		}
+		file_path_len = file_name_end - buffer;
+		*file_name_end = '\0';
+		++parsed_files;
+		add_to_context(buffer, file_path_len, ctx);
+		buffer = file_name_end + 1;
+	}
+
+	return consumed;
+}
 
 static int _read_parse_file(struct file *file, struct restricted_files *ctx)
 {
 	char *path = __getname();
+	loff_t offset = 0;
 	int ret;
 
 =
@@ -101,13 +141,22 @@ static int _read_parse_file(struct file *file, struct restricted_files *ctx)
 		return -ENOMEM;
 	}
 
-/*	vfs_read(file, (void __user *)addr, count, &pos);*/
+	while (true) {
+		ret = kernel_read(file, offset, path, PATH_MAX - 1);
+		path[ret] = '\0';
+		TRACE_DEBUG("read %d characters", ret);
+		if (ret <= 0) {
+			TRACE_DEBUG("Done reading file");
+			break;
+		}
 
-	ret = kernel_read(file, 0, path, PATH_MAX);
-	TRACE_INFO("Reply %d", ret);
-	if (ret <= 0) {
-		ret = -EINVAL;
-		goto release_buffer;
+		ret = parse_fill_context_section(path, ret, ctx);
+		if (ret <= 0) {
+			TRACE_WARNING("Failed to prase section %s", path);
+			goto release_buffer;
+		}
+
+		offset += ret;
 	}
 	ret = 0;
 
