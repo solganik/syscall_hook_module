@@ -1,7 +1,7 @@
 #include <asm/unistd.h>
 #include <asm/unistd.h>
 #include <linux/preempt.h>
-
+#include <linux/stop_machine.h>
 #include "utils.h"
 #include "udis_utils.h"
 #include "debug.h"
@@ -32,10 +32,22 @@ static int get_sct(void)
 	return 1;
 }
 
+struct _hook_struct{
+	open_syscall_type new_cb;
+	open_syscall_type orig_cb;
+};
+
+int do_hook_open(void *args)
+{
+	struct _hook_struct* param = (struct _hook_struct *)args;
+	param->orig_cb = sct_map[__NR_open];
+	sct_map[__NR_open] = param->new_cb;
+	return 0;
+}
 
 open_syscall_type hook_open(open_syscall_type cb)
 {
-	open_syscall_type original_call = NULL;
+	struct _hook_struct param = {.orig_cb = NULL, .new_cb = cb};
 	if(!get_sct())
 		return NULL;
 
@@ -45,12 +57,10 @@ open_syscall_type hook_open(open_syscall_type cb)
 		goto out;
 	}
 
-
-	original_call = sct_map[__NR_open];
-	sct_map[__NR_open] = cb;
+	stop_machine(do_hook_open, &param, 0);
 out:
 	vunmap((void *)((unsigned long)sct_map & PAGE_MASK)), sct_map = NULL;
-	return original_call;
+	return param.orig_cb;
 }
 
 
