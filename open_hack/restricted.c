@@ -53,6 +53,23 @@ void restricted_destroy(void *ctx)
 	kfree(ctx);
 }
 
+static inline unsigned long hash_str(const char *name, int bits)
+{
+	unsigned long hash = 0;
+	unsigned long l = 0;
+	int len = 0;
+	unsigned char c;
+	do {
+		if (unlikely(!(c = *name++))) {
+			c = (char)len; len = -1;
+		}
+		l = (l << 8) | c;
+		len++;
+		if ((len & (BITS_PER_LONG/8-1))==0)
+			hash = hash_long(hash^l, BITS_PER_LONG);
+	} while (len);
+	return hash >> (BITS_PER_LONG - bits);
+}
 
 
 
