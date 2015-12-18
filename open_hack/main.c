@@ -1,6 +1,11 @@
 #include "debug.h"
 #include "hook.h"
 #include "restricted.h"
+#include <linux/namei.h>
+#include <linux/fcntl.h>
+#include <linux/fs.h>
+#include <linux/mm.h>
+#include <linux/slab.h>
 
 #define RESTRICTED_FILE_PATH  "/tmp/protected.txt"
 
@@ -31,11 +36,25 @@ done:
 
 long our_sys_open(const char __user *filename, int flags, umode_t mode)
 {
-	TRACE_INFO("Redirecting to original %s", filename);
-	if (is_restricted(restricted_ctx,filename)){
-		TRACE_WARNING("File %s is restricted .. deny", filename);
+	char *buffer = __getname();
+	char *file_path_full;
+	int ret;
+
+	/* Get absolute path of the file note that this does not yet deal with symbolic links*/
+	file_path_full = path_utils_find_path(filename, buffer, PATH_MAX, flags);
+	if (IS_ERR(file_path_full)) {
+		ret = PTR_ERR(file_path_full);
+		__putname(buffer);
+		return ret;
+	}
+
+	if (is_restricted(restricted_ctx, file_path_full)){
+		TRACE_WARNING("File '%s'  absolute path '%s' is restricted .. deny", filename, file_path_full);
+		__putname(buffer);
 		return -EPERM;
 	}
+	__putname(buffer);
+
 	return original_call(filename, flags, mode);
 }
 
