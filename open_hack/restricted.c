@@ -10,7 +10,7 @@
 #include <linux/slab.h>
 
 
-#define RESTRICTED_HASH_BITS 6
+#define RESTRICTED_HASH_BITS 7
 struct restricted_files {
 		DECLARE_HASHTABLE(hash, RESTRICTED_HASH_BITS);
 };
