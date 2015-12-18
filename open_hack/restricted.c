@@ -76,9 +76,7 @@ static size_t _get_size_for_entry_alloc_bytes(int file_path_len)
 	return sizeof(struct restricted_file_entry) + file_path_len + 1;
 }
 
-
-/* Don't inline this: 'struct kstat' is biggish */
-static noinline_for_stack long _manifest_file_size_bytes(struct file *file)
+static int add_to_context(char *file_path, int len, struct restricted_files *ctx)
 {
 	unsigned long hash_key;
 	int alloc_len = _get_size_for_entry_alloc_bytes(len);
@@ -136,7 +134,6 @@ static int _read_parse_file(struct file *file, struct restricted_files *ctx)
 	loff_t offset = 0;
 	int ret;
 
-=
 	if (!path) {
 		return -ENOMEM;
 	}
@@ -198,10 +195,9 @@ bool is_restricted(void *ctx, const char *file_path)
 	struct restricted_files *restricted_ctx = (struct restricted_files *)ctx;
 	unsigned long hash_key = hash_str(file_path,RESTRICTED_HASH_BITS);
 
-	TRACE_DEBUG("Check if %s restricted", file_path);
+	TRACE_DEBUG("Check if %s restricted key 0x%lx", file_path, hash_key);
 	hash_for_each_possible(restricted_ctx->hash, entry, hash, hash_key) {
-		TRACE_DEBUG("Compare %s to %s ", file_path, entry->buffer);
-		if (strcmp(file_path,entry->buffer) == 0){
+		if (!strcmp(file_path,entry->buffer)){
 			return true;
 		}
 	}
