@@ -1,0 +1,3 @@
+/tmp/a.txt
+/tmp/bla.aaa
+/tmp/protected.txt
