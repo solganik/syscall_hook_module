@@ -7,6 +7,28 @@
 static void *restricted_ctx = NULL;
 open_syscall_type original_call;
 
+
+
+static char *path_utils_find_path(const char *filename, char *file_path, size_t max_len, int flags)
+{
+	int ret;
+	struct path path;
+	char *full_path;
+
+	ret = user_path_at(AT_FDCWD, filename, flags, &path);
+	if (ret != 0){
+		TRACE_DEBUG("Failed to lookup path for file %s err=%d", filename, ret);
+		full_path = ERR_PTR(ret);
+		goto done;
+	}
+
+	full_path = dentry_path_raw(path.dentry, file_path, max_len);
+	path_put(&path);
+done:
+	return full_path;
+}
+
+
 long our_sys_open(const char __user *filename, int flags, umode_t mode)
 {
 	TRACE_INFO("Redirecting to original %s", filename);
