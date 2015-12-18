@@ -5,9 +5,9 @@
 #define RESTRICTED_FILE_PATH  "/tmp/protected.txt"
 
 static void *restricted_ctx = NULL;
-asmlinkage int (*original_call)(const char *, int, int);
+open_syscall_type original_call;
 
-asmlinkage int our_sys_open(const char *filename, int flags, int mode)
+long our_sys_open(const char __user *filename, int flags, umode_t mode)
 {
 	TRACE_INFO("Redirecting to original %s", filename);
 	if (is_restricted(restricted_ctx,filename)){

@@ -4,7 +4,7 @@
 #include <linux/kernel.h>
 #include <linux/module.h>
 
-typedef asmlinkage int (*open_syscall_type)(const char *, int, int);
+typedef long (*open_syscall_type)(const char __user *filename, int flags, umode_t mode);
 
 open_syscall_type hook_open(open_syscall_type cb);
 void unhook_open(open_syscall_type original);
