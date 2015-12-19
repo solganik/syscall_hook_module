@@ -20,9 +20,8 @@ static char *path_utils_find_path(const char *filename, char *file_path, size_t 
 	struct path path;
 	char *full_path;
 
-	ret = user_path_at(AT_FDCWD, filename, flags, &path);
-	if (ret != 0){
-		TRACE_DEBUG("Failed to lookup path for file %s err=%d", filename, ret);
+	ret = user_path_at(AT_FDCWD, filename, flags | LOOKUP_FOLLOW, &path);
+	if (ret != 0) {
 		full_path = ERR_PTR(ret);
 		goto done;
 	}
