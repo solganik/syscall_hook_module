@@ -9,6 +9,10 @@
 #include <linux/mm.h>
 #include <linux/slab.h>
 
+/*
+ * Uncomment to debug
+ * #define RESTICTED_ACCESS_DEBUG 1
+ **/
 
 #define RESTRICTED_HASH_BITS 7
 struct restricted_files {
@@ -197,7 +201,9 @@ bool is_restricted(void *ctx, const char *file_path)
 	struct restricted_files *restricted_ctx = (struct restricted_files *)ctx;
 	unsigned long hash_key = hash_str(file_path,RESTRICTED_HASH_BITS);
 
+#ifdef RESTICTED_ACCESS_DEBUG
 	TRACE_DEBUG("Check if %s restricted key 0x%lx", file_path, hash_key);
+#endif
 	hash_for_each_possible(restricted_ctx->hash, entry, hash, hash_key) {
 		if (!strcmp(file_path,entry->buffer)){
 			return true;
