@@ -53,22 +53,24 @@ void restricted_destroy(void *ctx)
 	kfree(ctx);
 }
 
-static inline unsigned long hash_str(const char *name, int bits)
+/**
+ * Jenkins hash function
+ * https://en.wikipedia.org/wiki/Jenkins_hash_function
+ */
+static unsigned long hash_str(const char *key, size_t bits)
 {
-	unsigned long hash = 0;
-	unsigned long l = 0;
-	int len = 0;
-	unsigned char c;
-	do {
-		if (unlikely(!(c = *name++))) {
-			c = (char)len; len = -1;
-		}
-		l = (l << 8) | c;
-		len++;
-		if ((len & (BITS_PER_LONG/8-1))==0)
-			hash = hash_long(hash^l, BITS_PER_LONG);
-	} while (len);
-	return hash >> (BITS_PER_LONG - bits);
+	unsigned long hash = 0x55555555;
+	while (*key) {
+		hash += (int)*key;
+		hash += (hash << 10);
+		hash ^= (hash >> 6);
+		++key;
+	}
+
+    hash += (hash << 3);
+    hash ^= (hash >> 11);
+    hash += (hash << 15);
+    return hash >> (BITS_PER_LONG - bits);
 }
 
 static size_t _get_size_for_entry_alloc_bytes(int file_path_len)
