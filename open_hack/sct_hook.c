@@ -2,6 +2,7 @@
 #include <asm/unistd.h>
 #include <linux/preempt.h>
 #include <linux/stop_machine.h>
+#include <linux/kallsyms.h>
 #include "utils.h"
 #include "udis_utils.h"
 #include "debug.h"
@@ -20,9 +21,14 @@ void *get_sys_call_table(void){
 	return ud_find_syscall_table_addr(system_call);
 }
 
+static void *find_syscalltable_address(void)
+{
+	return (void *)kallsyms_lookup_name("sys_call_table");
+}
+
 static int get_sct(void)
 {
-	sys_call_table = get_sys_call_table();
+	sys_call_table = find_syscalltable_address();
 	if(!sys_call_table){
 		TRACE_INFO("syscall_table is NULL, quitting...");
 		return 0;
